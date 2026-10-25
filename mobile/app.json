@@ -19,7 +19,8 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "static"
     },
     "plugins": [
       "expo-image",
@@ -31,6 +32,12 @@
           "enableRemoteNotifications": false
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2631f749-6f55-4859-8007-35db8ead9f13"
+      }
+    },
+    "owner": "conveyedflyer98"
   }
 }

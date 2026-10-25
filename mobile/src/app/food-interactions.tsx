@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Modal, Platform, Pressable, ScrollView,
-  StyleSheet, Text, TextInput, View, useWindowDimensions,
+  StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,7 @@ import { Icon, IconName } from '../icons';
 import { customInteractions, CustomInteraction, WaitUnit } from '../customInteractions';
 import { exampleInteractions } from '../exampleInteractions';
 import { styles as app } from '../styles';
+import { useViewportLayout } from '../useViewportLayout';
 
 type Page = 'list' | 'interactionDetails' | 'details' | 'timing' | 'review' | 'saved';
 type Example = {
@@ -85,7 +86,7 @@ function FoodCard({ item, onPress }: { item: Example; onPress: () => void }) {
 export default function FoodInteractionsRoute() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width, height, onLayout } = useViewportLayout();
   const web = Platform.OS === 'web';
   const desktop = web && width >= 600;
   const [page, setPage] = useState<Page>('list');
@@ -181,11 +182,11 @@ export default function FoodInteractionsRoute() {
     { title: 'Home', icon: 'home' }, { title: 'Food interactions', icon: 'search' }, { title: 'Calendar', icon: 'calendar' },
   ];
 
-  return <View style={[app.stage, desktop && app.desktopStage]}>
+  return <View onLayout={onLayout} style={[app.stage, desktop && app.desktopStage]}>
     <StatusBar style="dark" />
     <View testID="phone" style={[
       app.phone,
-      desktop && { width: 400, height: Math.min(height - 48, 876), flex: 0, borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
+      desktop && { width: 400, height: Math.min(height - 48, 876), flexGrow: 0, flexShrink: 0, flexBasis: 'auto', borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
       web && !desktop && { borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
     ]}>
       {web ? <View style={app.status} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

@@ -15,7 +15,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { demoMode, Medication } from './medications';
@@ -44,6 +43,7 @@ export interface ParsedDose {
 
 interface Props {
   medications: Medication[];
+  windowHeight: number;
   onBack: () => void;
 }
 
@@ -163,10 +163,9 @@ export function getFoodRuleForMed(medication: Medication | null) {
 
 export function CalendarScreen({
   medications,
+  windowHeight,
   onBack,
 }: Props) {
-  const { height: windowHeight } = useWindowDimensions();
-
   // Selected date index in week strip (defaults to Friday 24)
   const [selectedDayIdx, setSelectedDayIdx] = useState(4);
   const selectedDay = WEEK_DAYS_DATA[selectedDayIdx];

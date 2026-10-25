@@ -5,7 +5,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-export const supabase = url && key ? createClient(url, key, {
+const connectedMode = process.env.EXPO_PUBLIC_DATA_MODE === 'supabase';
+// Expo Router statically renders web routes in Node during `expo export`.
+// AsyncStorage's web adapter needs a real browser window, so defer the
+// connected client until browser hydration (or native runtime).
+const browserStorageAvailable = Platform.OS !== 'web' || typeof window !== 'undefined';
+export const supabase = connectedMode && browserStorageAvailable && url && key ? createClient(url, key, {
   auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
 }) : null;
 

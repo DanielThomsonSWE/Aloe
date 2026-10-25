@@ -34,6 +34,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "export:web": "expo export --platform web",
+    "deploy:web": "npm run export:web && npx eas-cli@latest deploy --prod",
     "lint": "expo lint"
   },
   "private": true

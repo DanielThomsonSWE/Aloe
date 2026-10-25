@@ -36,6 +36,17 @@ Start the web preview:
 npm run web
 ```
 
+The web build is mobile-first. On phones it fills the browser viewport; on desktop browsers it presents the app inside a centered 400px phone frame for moderated usability sessions. The hosted build uses EAS Hosting:
+
+```sh
+cd mobile
+npm run deploy:web
+```
+
+The first deployment prompts you to sign in to Expo, connect this app to an EAS project, and choose its preview subdomain. The command exports the static web bundle and promotes it to the production URL. For a non-production preview, run `npm run export:web` followed by `npx eas-cli@latest deploy`.
+
+Keep `EXPO_PUBLIC_DATA_MODE=demo` for interview sessions that should use the local, device-scoped sample data. Configure the hosted Supabase/API values before deploying connected data; the current `.env.local` is intentionally ignored by git and is not uploaded.
+
 For native development, run `npm start`, then open a compatible Expo client or use `npm run ios` / `npm run android` with the required platform tooling. The app uses Expo SDK 58; the client must support that SDK. Native status bars and safe areas replace the simulated status bar and home indicator used in the web preview.
 
 Without environment files the app defaults to demo mode. Demo changes persist in device/browser storage. They are never uploaded or copied into a real account. Clearing the `aloe:demo:medications:v1` storage entry restores the three sample records on the next load.

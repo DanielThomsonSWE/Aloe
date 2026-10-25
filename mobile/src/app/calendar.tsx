@@ -1,17 +1,18 @@
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarScreen } from '../CalendarScreen';
 import { Icon, IconName } from '../icons';
 import { Medication, medications } from '../medications';
 import { styles as s } from '../styles';
+import { useViewportLayout } from '../useViewportLayout';
 
 export default function CalendarRoute() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width, height, onLayout } = useViewportLayout();
   const web = Platform.OS === 'web';
   const desktop = web && width >= 600;
   const [items, setItems] = useState<Medication[]>([]);
@@ -33,11 +34,11 @@ export default function CalendarRoute() {
   ];
 
   return (
-    <View style={[s.stage, desktop && s.desktopStage]}>
+    <View onLayout={onLayout} style={[s.stage, desktop && s.desktopStage]}>
       <StatusBar style="dark" />
       <View testID="phone" style={[
         s.phone,
-        desktop && { width: 400, height: Math.min(height - 48, 876), flex: 0, borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
+        desktop && { width: 400, height: Math.min(height - 48, 876), flexGrow: 0, flexShrink: 0, flexBasis: 'auto', borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
         web && !desktop && { borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
       ]}>
         {web ? (
@@ -46,7 +47,7 @@ export default function CalendarRoute() {
             <View style={s.deviceStatus}><Icon name="signal" /><Icon name="wifi" /><Icon name="battery" /></View>
           </View>
         ) : <View style={{ height: insets.top }} />}
-        <CalendarScreen medications={items} onBack={() => router.replace('/')} />
+        <CalendarScreen medications={items} windowHeight={height} onBack={() => router.replace('/')} />
         <View style={s.navigation}>
           <View style={s.navigationDivider} />
           <View style={s.tabs}>

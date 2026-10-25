@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl,
-  ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View,
+  ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -12,6 +12,7 @@ import { Medication, medications, visibleMedications } from '../medications';
 import { watchAuthState } from '../supabase';
 import { cancelMedicationReminders, parseReminderSchedule, replaceMedicationReminders, requestReminderPermission, scheduleMedicationReminders } from '../reminders';
 import { styles as s } from '../styles';
+import { useViewportLayout } from '../useViewportLayout';
 
 const disclaimer = 'Example information, not personal medical advice. Check with your pharmacist.';
 type Sheet = { kind: 'detail'; item: Medication } | { kind: 'soon'; title: string } | null;
@@ -20,7 +21,7 @@ const message = (e: unknown) => e instanceof Error ? e.message : 'Something went
 function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width, height, onLayout } = useViewportLayout();
   const web = Platform.OS === 'web';
   const desktop = web && width >= 600;
   const [items, setItems] = useState<Medication[]>([]);
@@ -137,11 +138,11 @@ function Home() {
     setItems(current => current.filter(value => value.id !== item.id)); setSheet(null);
   }, setFormError);
 
-  return <View style={[s.stage, desktop && s.desktopStage]}>
+  return <View onLayout={onLayout} style={[s.stage, desktop && s.desktopStage]}>
     <StatusBar style="dark" />
     <View testID="phone" style={[
       s.phone,
-      desktop && { width: 400, height: Math.min(height - 48, 876), flex: 0, borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
+      desktop && { width: 400, height: Math.min(height - 48, 876), flexGrow: 0, flexShrink: 0, flexBasis: 'auto', borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
       web && !desktop && { borderWidth: 1, borderColor: '#b8b8b8', borderRadius: 40 },
     ]}>
       {web ? <View style={s.status} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

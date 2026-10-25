@@ -5,7 +5,7 @@ import { Outfit_700Bold } from '@expo-google-fonts/outfit/700Bold';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { styles } from '../styles';
 
 export default function RootLayout() {
@@ -22,7 +22,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
+      <Stack screenOptions={{ headerShown: false, animation: Platform.OS === 'web' ? 'none' : 'fade' }} />
     </SafeAreaProvider>
   );
 }
