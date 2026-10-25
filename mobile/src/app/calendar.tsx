@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { trackFirst } from '../analytics';
 import { CalendarScreen } from '../CalendarScreen';
 import { Icon, IconName } from '../icons';
 import { Medication, medications } from '../medications';
@@ -73,6 +74,7 @@ export default function CalendarRoute() {
                   accessibilityLabel={tab.title}
                   accessibilityState={{ selected }}
                   onPress={() => {
+                    if (selected) trackFirst('click_calendar_tab');
                     if (tab.title === 'Home') router.replace('/');
                     else if (foodTab) router.replace('/food-interactions');
                   }}

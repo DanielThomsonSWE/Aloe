@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { trackFirst } from '../analytics';
 import { Icon, IconName } from '../icons';
 import { AddMedicationFlow, AddMedicationResult } from '../AddMedicationFlow';
 import { Medication, medications, visibleMedications } from '../medications';
@@ -199,7 +200,7 @@ function Home() {
           <Pressable key={tab.title} accessibilityRole="tab" accessibilityLabel={tab.title} accessibilityState={{ selected: tab.title === 'Home' }}
             onPress={() => {
               if (tab.title === 'Home') { setQuery(''); setAdding(false); }
-              else if (tab.title === 'Calendar') { setAdding(false); router.push('/calendar'); }
+              else if (tab.title === 'Calendar') { trackFirst('click_calendar_tab'); setAdding(false); router.push('/calendar'); }
               else router.push('/food-interactions');
             }}
             style={({ pressed }) => [s.tab, tab.title === 'Home' && s.activeTab, pressed && s.pressed]}>

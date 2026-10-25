@@ -6,6 +6,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { trackFirst } from '../analytics';
 import { Icon, IconName } from '../icons';
 import { customInteractions, CustomInteraction, WaitUnit } from '../customInteractions';
 import { exampleInteractions, ReferenceInteraction, referenceInteractions } from '../exampleInteractions';
@@ -118,7 +119,7 @@ export default function FoodInteractionsRoute() {
   const startCustom = () => { resetDraft(); setSelectedCustom(null); setDeletedNotice(null); setPage('details'); };
   const goToTab = (tab: 'Home' | 'Food interactions' | 'Calendar') => {
     if (tab === 'Home') router.replace('/');
-    else if (tab === 'Calendar') router.replace('/calendar');
+    else if (tab === 'Calendar') { trackFirst('click_calendar_tab'); router.replace('/calendar'); }
     else { setPage('list'); setSelectedExample(null); setSelectedCustom(null); setDeleteTarget(null); }
   };
   const deleteSelectedInteraction = async () => {
@@ -174,7 +175,7 @@ export default function FoodInteractionsRoute() {
         <ScrollView style={[app.scroll, { minHeight: 0 }]} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
           <View style={styles.titleRow}>
             <Text role="heading" style={styles.pageTitle}>Food interactions</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Add custom interaction" onPress={startCustom} style={styles.addIconButton}><Icon name="plus" /></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Add custom interaction" onPress={() => { trackFirst('add_interaction_button_click'); startCustom(); }} style={styles.addIconButton}><Icon name="plus" /></Pressable>
           </View>
           <View style={styles.searchBox}>
             <Icon name="search" />
@@ -291,7 +292,7 @@ export default function FoodInteractionsRoute() {
           </View>
           <Text style={styles.smallDisclaimer}>Example custom rule, not a verified safe interval. Confirm timing with a pharmacist. Do not change medication directions based on this entry.</Text>
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-          <Pressable accessibilityRole="button" disabled={saving} onPress={() => void saveCustom()} style={[styles.primaryButton, saving && app.disabled]}>{saving ? <ActivityIndicator color="#202020" /> : <Text style={styles.primaryButtonText}>Save interaction</Text>}</Pressable>
+          <Pressable accessibilityRole="button" disabled={saving} onPress={() => { trackFirst('save_interaction'); void saveCustom(); }} style={[styles.primaryButton, saving && app.disabled]}>{saving ? <ActivityIndicator color="#202020" /> : <Text style={styles.primaryButtonText}>Save interaction</Text>}</Pressable>
         </ScrollView>}
 
         {page === 'saved' && <ScrollView style={styles.flowScroll} contentContainerStyle={styles.savedContent}>

@@ -17,6 +17,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { trackFirst } from './analytics';
 import { demoMode, Medication } from './medications';
 import { Icon } from './icons';
 import { ReferenceInteraction, referenceInteractions } from './exampleInteractions';
@@ -489,7 +490,7 @@ export function CalendarScreen({
                       accessibilityRole="button"
                       accessibilityLabel={`${dose.medication.name} ${dose.displayTime} dose marker`}
                       accessibilityState={{ selected: isDoseSelected }}
-                      onPress={() => toggleDose(dose.id)}
+                      onPress={() => { trackFirst('found_medication_in_calendar'); toggleDose(dose.id); }}
                       style={[s.doseHitArea, { top: doseY - 14 }]}
                     >
                       {isDoseSelected && <View style={s.selectedDoseRing}><Icon name="doseRing" /></View>}
