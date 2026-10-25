@@ -9,8 +9,9 @@ export type MedicationInput = Pick<Medication, 'name' | 'dosage' | 'schedule' | 
 export const demoMode = process.env.EXPO_PUBLIC_DATA_MODE !== 'supabase';
 const API = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 const STORAGE_KEY = 'aloe:demo:medications:v1';
+const DEMO_METFORMIN_SCHEDULE = '5:00 PM (Mon, Tue, Wed, Thu, Fri)';
 const examples: Medication[] = [
-  { id: 'demo-metformin', name: 'Metformin', dosage: '500 mg', schedule: '', description: 'Twice daily with meals', pinned: false, created_at: '2026-01-01T00:00:00Z' },
+  { id: 'demo-metformin', name: 'Metformin', dosage: '500 mg', schedule: DEMO_METFORMIN_SCHEDULE, description: 'Twice daily with meals', pinned: false, created_at: '2026-01-01T00:00:00Z' },
   { id: 'demo-synthroid', name: 'Synthroid', dosage: '100 mcg', schedule: '', description: 'Morning, empty stomach', pinned: false, created_at: '2026-01-01T00:00:01Z' },
   { id: 'demo-lisinopril', name: 'Lisinopril', dosage: '10 mg', schedule: '', description: 'Once daily, morning', pinned: false, created_at: '2026-01-01T00:00:02Z' },
 ];
@@ -55,7 +56,10 @@ async function readDemo(): Promise<Medication[]> {
     const items = JSON.parse(stored) as (Omit<Medication, 'description'> & { description?: string })[];
     let migrated = false;
     const normalized: Medication[] = items.map(item => {
-      const value = normalizeMedication({ ...item, description: item.description ?? '' });
+      const schedule = item.id === 'demo-metformin' && !item.schedule
+        ? DEMO_METFORMIN_SCHEDULE
+        : item.schedule;
+      const value = normalizeMedication({ ...item, schedule, description: item.description ?? '' });
       if (value.description !== item.description || value.schedule !== item.schedule) migrated = true;
       return value;
     });
