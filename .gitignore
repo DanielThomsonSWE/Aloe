@@ -8,3 +8,5 @@ __pycache__/
 .env.local
 *.pyc
 .DS_Store
+.agents/
+skills-lock.json

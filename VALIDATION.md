@@ -21,8 +21,8 @@
 1. In demo mode, initial Home shows Metformin, Synthroid, and Lisinopril, without Atorvastatin.
 2. Search by name or schedule, try an unmatched query, then clear it.
 3. Pin Lisinopril: it moves first; reload and confirm the pin persists. Unpin it to restore chronological order.
-4. Open Add medication; submit an empty form and confirm validation. Add a labeled test record, reload, and inspect its details.
+4. Open Add medication; submit an empty form and confirm validation. Add a labeled test record with an exact time, repeat days, and a description such as “Once daily, morning”; reload, inspect it, edit all fields, and confirm the saved changes.
 5. Remove that test record through the explicit confirmation; cancellation must keep it.
-6. Food interactions and Calendar show coming-soon dialogs; Home remains the only page.
+6. Open Food interactions and Calendar and confirm the saved interactions and exact-time medication schedules load.
 7. Check a narrow phone, increased text size, keyboard avoidance, native safe areas, and all original icons.
-8. In connected mode, verify empty initial state, persistence, errors/retry, and two-user isolation against the real project.
+8. In connected mode, verify empty initial state, persistence, edit and pin updates, errors/retry, and two-user isolation against the real project.

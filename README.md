@@ -6,9 +6,9 @@ React Native (Expo + TypeScript), Python (FastAPI), and Supabase. Implements the
 
 - The original home layout, Inter/Outfit fonts, and 11 original local Figma SVG assets.
 - Search by medication name, dosage, or schedule; pin/unpin with pinned items first.
-- Medication details, validated add form, and removal with a confirmation step.
+- Medication details, validated add/edit flows, exact scheduled times with repeat days, a separate optional description, and removal with confirmation.
 - Loading, empty, no-results, error/retry, and pull-to-refresh states.
-- Home navigation; Food interactions and Calendar open “Coming soon” dialogs.
+- Home, Calendar, and Food interactions navigation; the Calendar shows saved exact-time schedules.
 - A persistent local demo containing the three Figma examples, without Atorvastatin.
 - A Python API and owner-scoped Supabase SQL for connected use.
 
@@ -46,7 +46,7 @@ The project URL and publishable key supplied in chat are saved in **ignored** `m
 
 Hosted project setup and connectivity have **not been verified** because the environment blocked network access.
 
-1. Open the SQL Editor in your Supabase project and run `supabase/setup.sql` once. It creates `public.aloe_medications`, explicit API grants, and four ownership policies. If this table already exists, review it before applying the script; the script deliberately fails rather than replacing existing data.
+1. Open the SQL Editor in your Supabase project and run `supabase/setup.sql` once. It creates `public.aloe_medications`, explicit API grants, and ownership policies. If you already ran the initial setup, run `supabase/enable_medication_edits.sql` instead; do not rerun the create-table script.
 2. Enable **Anonymous Sign-Ins** in Supabase Authentication settings. The MVP creates a private anonymous identity so no extra login page is needed. An anonymous identity remains tied to the device's stored session; account recovery and cross-device sign-in are not included. Keep this as a development setup until the intended account lifecycle is implemented.
 3. Ensure the Data API is enabled for the `public` schema.
 4. Start the Python API from a separate terminal:
@@ -69,11 +69,11 @@ For a physical phone, use your computer's LAN address as the API URL and start U
 All medication endpoints require `Authorization: Bearer <Supabase access token>`:
 
 - `GET /medications`: list the current user's saved medications.
-- `POST /medications`: add `name`, `dosage`, and `schedule`.
-- `PATCH /medications/{uuid}`: set the `pinned` boolean.
+- `POST /medications`: add `name`, `dosage`, exact-time `schedule`, and optional `description`.
+- `PATCH /medications/{uuid}`: update the `pinned` boolean, medication name, dosage, exact-time schedule, and/or description.
 - `DELETE /medications/{uuid}`: remove the current user's saved item.
 
-The API validates tokens with Supabase Auth, derives ownership from that identity, and forwards the caller's token to PostgREST. Row-level security remains active. The client cannot set an owner through the API. Direct database grants only permit inserting medication fields and updating the pin flag.
+The API validates tokens with Supabase Auth, derives ownership from that identity, and forwards the caller's token to PostgREST. Row-level security remains active. The client cannot set an owner through the API. Direct database grants permit inserting and editing medication fields while keeping row access owner-scoped.
 
 ## Checks
 

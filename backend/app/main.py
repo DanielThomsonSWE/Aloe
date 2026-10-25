@@ -7,7 +7,7 @@ import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,11 +23,22 @@ class MedicationInput(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     dosage: str = Field(min_length=1, max_length=80)
     schedule: str = Field(min_length=1, max_length=200)
+    description: str = Field(default='', max_length=500)
 
 
-class PinInput(BaseModel):
-    model_config = ConfigDict(extra='forbid', strict=True)
-    pinned: bool
+class MedicationUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra='forbid', strict=True)
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    dosage: str | None = Field(default=None, min_length=1, max_length=80)
+    schedule: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=500)
+    pinned: bool | None = None
+
+    @model_validator(mode='after')
+    def require_nonempty_fields(self):
+        if not self.model_fields_set or any(getattr(self, field) is None for field in self.model_fields_set):
+            raise ValueError('Provide at least one non-null medication field to update.')
+        return self
 
 
 class Medication(MedicationInput):
@@ -92,7 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     User = Annotated[Identity, Depends(identity)]
     table = '/rest/v1/aloe_medications'
-    columns = 'id,name,dosage,schedule,pinned,created_at'
+    columns = 'id,name,dosage,schedule,description,pinned,created_at'
 
     @app.get('/health')
     async def health():
@@ -107,16 +118,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post('/medications', response_model=Medication, status_code=201)
     async def add_medication(body: MedicationInput, request: Request, user: User):
         response = await supabase_request(request, 'POST', table, user.token,
-            json={**body.model_dump(), 'user_id': str(user.user_id)}, params={'select': columns})
+            json={**body.model_dump(exclude_unset=True), 'user_id': str(user.user_id)}, params={'select': columns})
         rows = response.json()
         if not rows:
             raise HTTPException(503, 'The medication was not saved. Please try again.')
         return rows[0]
 
     @app.patch('/medications/{medication_id}', response_model=Medication)
-    async def pin_medication(medication_id: UUID, body: PinInput, request: Request, user: User):
+    async def update_medication(medication_id: UUID, body: MedicationUpdate, request: Request, user: User):
         response = await supabase_request(request, 'PATCH', table, user.token,
-            params={'id': f'eq.{medication_id}', 'user_id': f'eq.{user.user_id}', 'select': columns}, json=body.model_dump())
+            params={'id': f'eq.{medication_id}', 'user_id': f'eq.{user.user_id}', 'select': columns},
+            json=body.model_dump(exclude_unset=True))
         rows = response.json()
         if not rows:
             raise HTTPException(404, 'Medication not found.')
