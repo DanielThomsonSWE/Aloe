@@ -19,17 +19,23 @@ import {
 } from 'react-native';
 import { demoMode, Medication } from './medications';
 import { Icon } from './icons';
-import { referenceInteractions } from './exampleInteractions';
+import { ReferenceInteraction, referenceInteractions } from './exampleInteractions';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const HOUR_HEIGHT = 64; // px per hour in timeline
 const TIMELINE_LEFT = 64; // offset for the hour labels column
 
-type Selection = 'dose' | 'food' | null;
+type Selection = 'dose' | 'food' | 'interaction' | null;
 const ALL_MEDICATIONS_ID = '__all_medications__';
 
 type ScheduledDose = ParsedDose & { medication: Medication };
+type ScheduledInteraction = {
+  id: string;
+  interaction: ReferenceInteraction;
+  dose: ScheduledDose;
+  intervalStr: string;
+};
 
 export interface ParsedDose {
   id: string;
@@ -100,6 +106,27 @@ function createDose(hour: number, minute: number, frequency = 'Daily', days: str
     frequency,
     days,
   };
+}
+
+function formatClockTime(totalMinutes: number) {
+  const minuteOfDay = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  const hour24 = Math.floor(minuteOfDay / 60);
+  const minute = minuteOfDay % 60;
+  const hour12 = hour24 % 12 || 12;
+  const period = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
+}
+
+function formatTimeRange(startHourDecimal: number, durationHours: number) {
+  const startMinutes = Math.round(startHourDecimal * 60);
+  const endMinutes = startMinutes + Math.round(durationHours * 60);
+  const start = formatClockTime(startMinutes);
+  const end = formatClockTime(endMinutes);
+  const startPeriod = / (AM|PM)$/.exec(start)?.[1];
+  const endPeriod = / (AM|PM)$/.exec(end)?.[1];
+  return startPeriod === endPeriod
+    ? `${start.replace(/ (AM|PM)$/, '')}–${end}`
+    : `${start}–${end}`;
 }
 
 export function parseScheduleTimes(schedule: string): ParsedDose[] {
@@ -232,8 +259,24 @@ export function CalendarScreen({
     dose.days.length === 0 || dose.days.includes(selectedDay.dayKey)
   )), [doses, selectedDay.dayKey]);
 
-  // Selection state: null (Default) | 'dose' (Medication selected) | 'food' (Food block selected)
+  const scheduledInteractions = useMemo<ScheduledInteraction[]>(() => (
+    dosesForDay.flatMap(dose => referenceInteractions
+      .filter(interaction => (
+        !removedExampleIds.includes(interaction.id)
+        && !!interaction.prototypeWindowHours
+        && interaction.drug.toLocaleLowerCase() === dose.medication.name.trim().toLocaleLowerCase()
+      ))
+      .map(interaction => ({
+        id: `${dose.id}:${interaction.id}`,
+        interaction,
+        dose,
+        intervalStr: formatTimeRange(dose.hourDecimal, interaction.prototypeWindowHours ?? 0),
+      })))
+  ), [dosesForDay, removedExampleIds]);
+
+  // Selection state: null (Default), 'dose', 'food' or a timed interaction block.
   const [selection, setSelection] = useState<Selection>(null);
+  const [activeInteractionId, setActiveInteractionId] = useState('');
 
   // Active dose within the medication
   const [activeDoseId, setActiveDoseId] = useState<string>(() => doses[0]?.id || 'dose-0');
@@ -249,6 +292,10 @@ export function CalendarScreen({
   const activeFoodRule = useMemo(
     () => activeDose ? getFoodRuleForMed(activeDose.medication) : null,
     [activeDose],
+  );
+  const activeInteraction = useMemo(
+    () => scheduledInteractions.find(interaction => interaction.id === activeInteractionId),
+    [scheduledInteractions, activeInteractionId],
   );
 
   // Dropdown popover state for medication picker
@@ -276,6 +323,12 @@ export function CalendarScreen({
       return 'food';
     });
   }, [activeDoseId]);
+
+  const toggleInteraction = useCallback((interaction: ScheduledInteraction) => {
+    setActiveDoseId(interaction.dose.id);
+    setActiveInteractionId(interaction.id);
+    setSelection(previous => previous === 'interaction' && activeInteractionId === interaction.id ? null : 'interaction');
+  }, [activeInteractionId]);
 
   const foodHeight = 2 * HOUR_HEIGHT; // 128px (2-hour avoidance window)
 
@@ -408,11 +461,16 @@ export function CalendarScreen({
 
         {interactionNotes.length > 0 && (
           <View style={s.interactionNotes} accessibilityLabel="Medication interaction notes">
-            <Text style={s.interactionNotesLabel}>Interaction notes · not time-specific</Text>
+            <Text style={s.interactionNotesLabel}>Interaction references</Text>
             {interactionNotes.map(interaction => (
               <View key={`${interaction.id}:${interaction.medication.id}`} style={s.interactionNote}>
                 <Text style={s.interactionNoteTitle}>{interaction.food} + {interaction.medication.name}</Text>
                 <Text style={s.interactionNoteEffect}>{interaction.effect}</Text>
+                {interaction.prototypeWindowHours && (
+                  <Text style={s.interactionNoteCaveat}>
+                    The {interaction.prototypeWindowHours}-hour calendar block is a usability-test interval, not a safe-time cutoff. Metformin labeling warns against excessive alcohol while receiving metformin.
+                  </Text>
+                )}
                 <Text style={s.interactionNoteSource}>{interaction.source}</Text>
               </View>
             ))}
@@ -445,6 +503,7 @@ export function CalendarScreen({
                 const isDoseSelected = selection === 'dose' && activeDose?.id === dose.id;
                 const isFoodSelected = selection === 'food' && activeDose?.id === dose.id;
                 const doseFoodRule = getFoodRuleForMed(dose.medication);
+                const doseInteractions = scheduledInteractions.filter(interaction => interaction.dose.id === dose.id);
 
                 return (
                   <React.Fragment key={dose.id}>
@@ -484,6 +543,27 @@ export function CalendarScreen({
                       <Text style={s.foodBlockTitle}>{doseFoodRule.title}</Text>
                       <Text style={s.foodBlockInterval}>{dose.intervalStr}</Text>
                     </Pressable>}
+
+                    {doseInteractions.map(interaction => {
+                      const isInteractionSelected = selection === 'interaction' && activeInteraction?.id === interaction.id;
+                      const durationHours = interaction.interaction.prototypeWindowHours ?? 0;
+                      return <Pressable
+                        key={interaction.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${interaction.interaction.food} interaction with ${dose.medication.name}, ${interaction.intervalStr}. Prototype interval only; not a safe-time cutoff.`}
+                        accessibilityState={{ selected: isInteractionSelected }}
+                        onPress={() => toggleInteraction(interaction)}
+                        style={[
+                          s.interactionBlock,
+                          { top: doseY, height: durationHours * HOUR_HEIGHT },
+                          isInteractionSelected && s.foodBlockSelected,
+                        ]}
+                      >
+                        <Text style={s.interactionBlockTitle}>{interaction.interaction.food} + {dose.medication.name}</Text>
+                        <Text style={s.interactionBlockInterval}>{interaction.intervalStr}</Text>
+                        <Text style={s.interactionBlockCaption}>{durationHours}h after dose · prototype</Text>
+                      </Pressable>;
+                    })}
                   </React.Fragment>
                 );
               })}
@@ -501,10 +581,14 @@ export function CalendarScreen({
             <View style={s.legendFoodSwatch} />
             <Text style={s.legendText}>Avoid food</Text>
           </View>
+          {scheduledInteractions.length > 0 && <View style={s.legendKey}>
+            <View style={s.legendInteractionSwatch} />
+            <Text style={s.legendText}>Interaction window</Text>
+          </View>}
         </View>
 
         {/* Selection Details Card (104px tall) */}
-        <View style={s.selectionDetailsContainer}>
+        <View style={[s.selectionDetailsContainer, selection === 'interaction' && s.interactionDetailsContainer]}>
           {selection === 'dose' && activeDose && (
             <Pressable
               accessibilityRole="button"
@@ -539,6 +623,21 @@ export function CalendarScreen({
             </Pressable>
           )}
 
+          {selection === 'interaction' && activeInteraction && (
+            <View style={[s.detailCard, s.interactionDetailCard]} accessibilityLabel="Interaction window details">
+              <View style={s.detailCardRow}>
+                <Text style={s.detailCardMedName}>{activeInteraction.interaction.food} + {activeInteraction.dose.medication.name}</Text>
+                <Text style={s.detailCardFoodInterval}>{activeInteraction.intervalStr}</Text>
+              </View>
+              <Text style={s.interactionDetailText}>
+                {activeInteraction.interaction.prototypeWindowHours} hours after the {activeInteraction.dose.displayTime} dose · usability-test interval only.
+              </Text>
+              <Text style={s.interactionDetailCaveat}>
+                This interval does not mark a safe time to drink afterward. Metformin labeling warns against excessive alcohol while receiving metformin.
+              </Text>
+            </View>
+          )}
+
           {selection === null && (
             <View style={s.emptyDetailsSpace} />
           )}
@@ -546,7 +645,7 @@ export function CalendarScreen({
 
         {/* Verification note */}
         <Text style={s.verificationNote}>
-          {selection === 'food' && activeFoodRule ? 'Unverified · confirm with pharmacist' : dosesForDay.length ? 'Times shown are from your saved schedule.' : 'Only saved exact times appear on the timeline.'}
+          {selection === 'interaction' ? 'Prototype window only · not medical guidance.' : selection === 'food' && activeFoodRule ? 'Unverified · confirm with pharmacist' : dosesForDay.length ? 'Times shown are from your saved schedule.' : 'Only saved exact times appear on the timeline.'}
         </Text>
       </ScrollView>
     </View>
@@ -765,6 +864,12 @@ const s = StyleSheet.create({
     lineHeight: 17,
     color: '#202020',
   },
+  interactionNoteCaveat: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#595959',
+  },
   interactionNoteSource: {
     fontFamily: 'Inter_400Regular',
     fontSize: 10,
@@ -869,6 +974,34 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#202020',
   },
+  interactionBlock: {
+    position: 'absolute',
+    left: 194,
+    width: 160,
+    backgroundColor: '#f3f3f3',
+    borderWidth: 1,
+    borderColor: '#202020',
+    borderLeftWidth: 4,
+    borderRadius: 4,
+    padding: 8,
+    gap: 4,
+    zIndex: 3,
+  },
+  interactionBlockTitle: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12,
+    color: '#202020',
+  },
+  interactionBlockInterval: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12,
+    color: '#202020',
+  },
+  interactionBlockCaption: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10,
+    color: '#595959',
+  },
   foodBlockTitle: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
@@ -905,6 +1038,15 @@ const s = StyleSheet.create({
     borderColor: '#b8b8b8',
     borderRadius: 2,
   },
+  legendInteractionSwatch: {
+    width: 20,
+    height: 12,
+    backgroundColor: '#f3f3f3',
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    borderColor: '#202020',
+    borderRadius: 2,
+  },
   legendText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 11,
@@ -923,6 +1065,26 @@ const s = StyleSheet.create({
     height: 104,
     justifyContent: 'space-between',
     backgroundColor: '#fff',
+  },
+  interactionDetailsContainer: {
+    height: 132,
+  },
+  interactionDetailCard: {
+    height: 132,
+    justifyContent: 'center',
+    gap: 6,
+  },
+  interactionDetailText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#202020',
+  },
+  interactionDetailCaveat: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10,
+    lineHeight: 13,
+    color: '#595959',
   },
   detailCardRow: {
     flexDirection: 'row',

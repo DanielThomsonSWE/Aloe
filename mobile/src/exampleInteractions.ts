@@ -10,6 +10,7 @@ export type ReferenceInteraction = {
   effect: string;
   detail: string;
   source: string;
+  prototypeWindowHours?: number;
 };
 
 export const referenceInteractions: ReferenceInteraction[] = [
@@ -18,6 +19,7 @@ export const referenceInteractions: ReferenceInteraction[] = [
     effect: 'Excess alcohol may raise the risk of lactic acidosis.',
     detail: 'Metformin prescribing information warns that excessive alcohol intake is a risk factor for lactic acidosis.',
     source: 'DailyMed · Metformin prescribing information',
+    prototypeWindowHours: 2,
   },
   {
     id: 'potassium-lisinopril', food: 'Potassium salt substitutes', drug: 'Lisinopril', dose: '10 mg',
