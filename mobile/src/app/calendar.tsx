@@ -8,6 +8,7 @@ import { Icon, IconName } from '../icons';
 import { Medication, medications } from '../medications';
 import { styles as s } from '../styles';
 import { useViewportLayout } from '../useViewportLayout';
+import { exampleInteractions } from '../exampleInteractions';
 
 export default function CalendarRoute() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function CalendarRoute() {
   const web = Platform.OS === 'web';
   const desktop = web && width >= 600;
   const [items, setItems] = useState<Medication[]>([]);
+  const [removedExampleIds, setRemovedExampleIds] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -23,6 +25,16 @@ export default function CalendarRoute() {
       if (active) setItems(value);
     }).catch(() => {
       if (active) setItems([]);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void exampleInteractions.removedIds().then(value => {
+      if (active) setRemovedExampleIds(value);
+    }).catch(() => {
+      if (active) setRemovedExampleIds([]);
     });
     return () => { active = false; };
   }, []);
@@ -47,7 +59,7 @@ export default function CalendarRoute() {
             <View style={s.deviceStatus}><Icon name="signal" /><Icon name="wifi" /><Icon name="battery" /></View>
           </View>
         ) : <View style={{ height: insets.top }} />}
-        <CalendarScreen medications={items} windowHeight={height} onBack={() => router.replace('/')} />
+        <CalendarScreen medications={items} removedExampleIds={removedExampleIds} windowHeight={height} onBack={() => router.replace('/')} />
         <View style={s.navigation}>
           <View style={s.navigationDivider} />
           <View style={s.tabs}>

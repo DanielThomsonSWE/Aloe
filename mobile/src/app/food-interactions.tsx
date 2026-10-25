@@ -8,37 +8,13 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName } from '../icons';
 import { customInteractions, CustomInteraction, WaitUnit } from '../customInteractions';
-import { exampleInteractions } from '../exampleInteractions';
+import { exampleInteractions, ReferenceInteraction, referenceInteractions } from '../exampleInteractions';
 import { styles as app } from '../styles';
 import { useViewportLayout } from '../useViewportLayout';
 
 type Page = 'list' | 'interactionDetails' | 'details' | 'timing' | 'review' | 'saved';
-type Example = {
-  id: string;
-  food: string;
-  drug: string;
-  dose: string;
-  effect: string;
-  detail: string;
-  source: string;
-};
+type Example = ReferenceInteraction;
 type DeleteTarget = { kind: 'custom'; item: CustomInteraction } | { kind: 'example'; item: Example };
-
-// Reference examples are illustrative summaries of public prescribing labels.
-const examples: Example[] = [
-  {
-    id: 'alcohol-metformin', food: 'Alcohol', drug: 'Metformin', dose: '500 mg',
-    effect: 'Excess alcohol may raise the risk of lactic acidosis.',
-    detail: 'Metformin prescribing information warns that excessive alcohol intake is a risk factor for lactic acidosis.',
-    source: 'DailyMed · Metformin prescribing information',
-  },
-  {
-    id: 'potassium-lisinopril', food: 'Potassium salt substitutes', drug: 'Lisinopril', dose: '10 mg',
-    effect: 'May raise blood potassium.',
-    detail: 'Lisinopril prescribing information cautions that potassium-containing salt substitutes may increase serum potassium.',
-    source: 'DailyMed · Lisinopril prescribing information',
-  },
-];
 
 const medicalNote = 'Example information, not personal medical advice. Check your medication’s instructions with your pharmacist.';
 const userEntryNote = 'Custom entries are for your own reference, stay on this device, and are not medically verified.';
@@ -121,7 +97,7 @@ export default function FoodInteractionsRoute() {
     return () => { active = false; };
   }, []);
 
-  const filteredExamples = useMemo(() => examples.filter(item =>
+  const filteredExamples = useMemo(() => referenceInteractions.filter(item =>
     !removedExampleIds.includes(item.id) && `${item.food} ${item.drug} ${item.dose} ${item.effect}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   ), [query, removedExampleIds]);
   const filteredCustom = useMemo(() => saved.filter(item =>

@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { demoMode, Medication } from './medications';
 import { Icon } from './icons';
+import { referenceInteractions } from './exampleInteractions';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ export interface ParsedDose {
 
 interface Props {
   medications: Medication[];
+  removedExampleIds: string[];
   windowHeight: number;
   onBack: () => void;
 }
@@ -163,6 +165,7 @@ export function getFoodRuleForMed(medication: Medication | null) {
 
 export function CalendarScreen({
   medications,
+  removedExampleIds,
   windowHeight,
   onBack,
 }: Props) {
@@ -194,6 +197,19 @@ export function CalendarScreen({
     () => allMeds.find(m => m.id === internalMedId) ?? null,
     [allMeds, internalMedId],
   );
+
+  const interactionNotes = useMemo(() => {
+    const medsToShow = internalMedId === ALL_MEDICATIONS_ID
+      ? allMeds
+      : allMeds.filter(med => med.id === internalMedId);
+
+    return medsToShow.flatMap(med => referenceInteractions
+      .filter(interaction => (
+        !removedExampleIds.includes(interaction.id)
+        && interaction.drug.toLocaleLowerCase() === med.name.trim().toLocaleLowerCase()
+      ))
+      .map(interaction => ({ ...interaction, medication: med })));
+  }, [allMeds, internalMedId, removedExampleIds]);
 
   // Keep medication metadata with each dose so all-schedules mode can label
   // markers and show the correct details when a user selects one.
@@ -389,6 +405,19 @@ export function CalendarScreen({
             ? (dosesForDay.some(dose => getFoodRuleForMed(dose.medication)) ? 'All medication schedules · Custom rule' : dosesForDay.length ? 'All medication schedules' : doses.length ? 'No doses scheduled for this day' : 'Add a medication to view its schedule')
             : foodRule ? 'Example schedule · Custom rule' : currentMed?.name ? (dosesForDay.length ? 'Saved schedule' : doses.length ? 'No dose scheduled for this day' : 'No exact time saved for this schedule') : 'Add a medication to view its schedule'}
         </Text>
+
+        {interactionNotes.length > 0 && (
+          <View style={s.interactionNotes} accessibilityLabel="Medication interaction notes">
+            <Text style={s.interactionNotesLabel}>Interaction notes · not time-specific</Text>
+            {interactionNotes.map(interaction => (
+              <View key={`${interaction.id}:${interaction.medication.id}`} style={s.interactionNote}>
+                <Text style={s.interactionNoteTitle}>{interaction.food} + {interaction.medication.name}</Text>
+                <Text style={s.interactionNoteEffect}>{interaction.effect}</Text>
+                <Text style={s.interactionNoteSource}>{interaction.source}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Timeline viewport */}
         <View style={[s.timelineViewport, { height: timelineHeight }]}>
@@ -707,6 +736,39 @@ const s = StyleSheet.create({
   exampleQualifier: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
+    color: '#595959',
+  },
+  interactionNotes: {
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+    borderRadius: 10,
+    padding: 12,
+    gap: 8,
+    backgroundColor: '#f8f8f8',
+  },
+  interactionNotesLabel: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+    color: '#595959',
+  },
+  interactionNote: {
+    gap: 3,
+  },
+  interactionNoteTitle: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
+    color: '#202020',
+  },
+  interactionNoteEffect: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#202020',
+  },
+  interactionNoteSource: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10,
+    lineHeight: 14,
     color: '#595959',
   },
   // Timeline viewport: clips canvas
